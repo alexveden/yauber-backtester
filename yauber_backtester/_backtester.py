@@ -62,9 +62,6 @@ class Backtester:
 
         return df_all_metrics
 
-        idx = pd.Index([1, 2])
-        idx.unique()
-
     def run(self) -> Account:
         """
         Runs portfolio backtesting for all assets in universe
