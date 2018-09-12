@@ -29,7 +29,7 @@ class Trade:
         self._side = 1 if transaction['qty'] > 0 else -1
         self._is_closed = False
         self._asset = transaction['asset']
-        self._qty = self._entry_qty
+        self._qty = transaction['qty']
 
     @property
     def is_closed(self):
@@ -57,9 +57,11 @@ class Trade:
         qty = transaction['qty']
         pnl = transaction['pnl_execution']
         costs = transaction['costs_exec']
-        assert not ((self._qty > 0 and self._qty + qty < 0) or (self._qty < 0 and self._qty + qty > 0)), 'Reversal transaction detected!'
-        assert not self._is_closed, 'Position already closed'
         assert transaction['asset'] == self._asset
+        assert not ((self._qty > 0 and self._qty + qty < 0) or
+                    (self._qty < 0 and self._qty + qty > 0)), f'Reversal transaction detected! {self._asset} at {dt}: ' \
+                                                              f'Opened: {self._qty} Trans: {qty}'
+        assert not self._is_closed, 'Position already closed'
 
         if isfinite(pnl):
             self._pnl += pnl
@@ -179,20 +181,25 @@ class Report:
         # Calculate stats
         trade_pnl = acc_trades['pnl'].fillna(0)
         equity = acc_df['equity'].ffill()
+        capital_avg = acc_df['capital_invested'].mean()
+
         mdd = np.nan
         winrate = np.nan
         netprofit = np.nan
 
         if len(trade_pnl) > 0 and len(acc_df) > 0:
             winrate = len(trade_pnl[trade_pnl > 0]) / len(trade_pnl)
-            netprofit = equity[-1]
+            netprofit = equity[-1] - capital_avg
             mdd = (equity - equity.expanding().max()).min()
 
         stats = {
             'NumberOfTrades': len(acc_trades),
             'WinRate': winrate,
             'NetProfit': netprofit,
-            'MaxDD': mdd
+            'Equity': equity[-1],
+            'MaxDD': mdd,
+            'CapitalInvested (Avg)': capital_avg,
+            'CapitalInvested (Total)': account.capital_invested,
         }
 
         return stats, acc_df, acc_trades

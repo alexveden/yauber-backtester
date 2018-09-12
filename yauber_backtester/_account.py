@@ -110,15 +110,17 @@ class Account:
 
         return result
 
-    def capital_transaction(self, dt, amount):
+    def capital_transaction(self, dt, amount, is_own_money=True):
         """
         Add or withdraw capital
         :param amount:
+        :param is_own_money: if True - deposit/withdraw own money, if False - it might be interest, or dividends
         :return:
         """
         self._equity_close += amount
         self._equity_exec += amount
-        self._capital_invested += amount
+        if is_own_money:
+            self._capital_invested += amount
 
     def as_transactions(self) -> pd.DataFrame:
         """
@@ -310,30 +312,31 @@ class Account:
                 costs_potential_exec_total += costs_exec
 
             if prev_pos is None:
-                #
-                # Open new position
-                #
-                pnl_close = 0.0 + costs_close
-                pnl_execution = 0.0 + costs_exec
-                position_action = 1  # 1 - open new position, -1 - close old position, 0 - hold position
+                if curr_pos[0] != 0:
+                    #
+                    # Open new position
+                    #
+                    pnl_close = 0.0 + costs_close
+                    pnl_execution = 0.0 + costs_exec
+                    position_action = 1  # 1 - open new position, -1 - close old position, 0 - hold position
 
-                # Store stats
-                transactions.append((
-                    dt,
-                    asset,
-                    position_action,
-                    curr_qty,
-                    close_price,
-                    exec_price,
-                    costs_close,
-                    costs_exec,
-                    pnl_close,
-                    pnl_execution
-                ))
-                pnl_close_total += pnl_close
-                pnl_execution_total += pnl_execution
-                costs_close_total += costs_close
-                costs_exec_total += costs_exec
+                    # Store stats
+                    transactions.append((
+                        dt,
+                        asset,
+                        position_action,
+                        curr_qty,
+                        close_price,
+                        exec_price,
+                        costs_close,
+                        costs_exec,
+                        pnl_close,
+                        pnl_execution
+                    ))
+                    pnl_close_total += pnl_close
+                    pnl_execution_total += pnl_execution
+                    costs_close_total += costs_close
+                    costs_exec_total += costs_exec
 
             elif curr_pos is None:
                 if prev_pos[0] != 0:
@@ -379,6 +382,9 @@ class Account:
                     if (curr_qty > 0 and prev_qty < 0) or (curr_qty < 0 and prev_qty > 0):
                         trans_qty = -prev_qty
                         new_trans_qty = curr_qty
+                else:
+                    if curr_qty == 0 and prev_qty == 0:
+                        continue
 
                 costs_close, costs_exec = asset.get_costs(dt, trans_qty)
                 pnl_close = asset.calc_dollar_pnl(dt, prev_cpx, curr_cpx, prev_qty) + costs_close
