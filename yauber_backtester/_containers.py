@@ -4,7 +4,7 @@ import numpy as np
 from numpy import take as np_take
 from numpy import argsort as np_argsort
 from typing import Tuple
-
+import pandas as pd
 import numba
 from math import nan
 
@@ -103,6 +103,13 @@ class MFrame:
         :return:
         """
         return self._assets_list
+
+    def as_dataframe(self):
+        """
+        Converts MFrame to Pandas.DataFrame. Warning: calculations might become much slower!
+        :return:
+        """
+        return pd.DataFrame(self._data, index=self._assets_list, columns=self._columns_list)
 
     def __getitem__(self, key) -> np.ndarray:
         """

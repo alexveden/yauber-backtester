@@ -70,6 +70,12 @@ class ContainersTestCase(unittest.TestCase):
         self.assertEqual(True, np.all(np.array([[-1, -2], [1, 2]])  == flt_val))
         self.assertEqual(True, np.all(mf.assets.take([2, 0]) == flt_assets))
 
+        # As dataframe
+        mdf = mf.as_dataframe()
+        self.assertEqual(True, isinstance(mdf, pd.DataFrame))
+        self.assertEqual(True, all(mdf.columns == df.columns))
+        self.assertEqual(True, all(mdf.index == df.index))
+
         # Items
         for a, r in mf.items():
             self.assertEqual(True, isinstance(a, Asset))

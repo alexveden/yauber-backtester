@@ -3,6 +3,8 @@ from ._account import Account
 import pandas as pd
 import numpy as np
 from math import isfinite
+from collections import OrderedDict
+
 
 TRADE_KEYS = ('asset', 'date_entry', 'date_exit', 'side', 'n_transactions', 'wavg_price_entered', 'wavg_price_exited',
               'qty_entered', 'qty_exited', 'pnl', 'costs')
@@ -181,26 +183,43 @@ class Report:
         # Calculate stats
         trade_pnl = acc_trades['pnl'].fillna(0)
         equity = acc_df['equity'].ffill()
-        capital_avg = acc_df['capital_invested'].mean()
+        capital_avg = acc_df['capital_invested'].ffill().mean()
 
+        winrate = np.nan
+        cagr = np.nan
         mdd = np.nan
+        mdd_pct = np.nan
         winrate = np.nan
         netprofit = np.nan
+        netprofit_perc = np.nan
 
         if len(trade_pnl) > 0 and len(acc_df) > 0:
             winrate = len(trade_pnl[trade_pnl > 0]) / len(trade_pnl)
             netprofit = equity[-1] - capital_avg
-            mdd = (equity - equity.expanding().max()).min()
+            netprofit_perc = (equity[-1] / capital_avg - 1)
+            mdd_arr = (equity - equity.expanding().max())
+            mdd = mdd_arr.min()
+            mdd_pct_arr = (equity / equity.expanding().max() - 1)
+            mdd_pct = mdd_pct_arr.min()
 
-        stats = {
-            'NumberOfTrades': len(acc_trades),
-            'WinRate': winrate,
-            'NetProfit': netprofit,
-            'Equity': equity[-1],
-            'MaxDD': mdd,
-            'CapitalInvested (Avg)': capital_avg,
-            'CapitalInvested (Total)': account.capital_invested,
-        }
+            difference_in_years = (equity.index[-1] - equity.index[0]).days / 365.2425
+            cagr = (netprofit_perc + 1) ** (1 / difference_in_years) - 1
+
+
+
+        stats = pd.Series(OrderedDict([
+            ('Equity', equity[-1]),
+            ('CAGR %', cagr * 100),
+            ('NetProfit $', netprofit),
+            ('NetProfit %', netprofit_perc * 100),
+            ('MaxDD $', mdd),
+            ('MaxDD %', mdd_pct * 100),
+            ('NumberOfTrades', len(acc_trades)),
+            ('WinRate', winrate),
+            ('CAGR/MDD', cagr / abs(mdd_pct)),
+            ('CapitalInvested (Avg)', capital_avg),
+            ('CapitalInvested (Total)', account.capital_invested),
+             ]))
 
         return stats, acc_df, acc_trades
 

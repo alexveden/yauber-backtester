@@ -60,5 +60,7 @@ class Strategy:
         mf.get_asset('asset_ticker') - get asset object by ticker name
         mf.get_filtered((mf['some_metric'] > 0) & (mf['another_metric'] == 1), sort_by_col='another_metric'[or None]) - get filtered and sorted data
         for (asset, m_data) in zip(*mf.get_filtered(_cond, sort_by_col='ma200')): - iterate over filtered and sorted results
+        filtered_assets, filtere_data  = mf.get_filtered(..some condition..) - get filtered asset list and metrics
+        mf.as_dataframe() - converts MFrame to Pandas.DataFrame. Warning: calculations might become much slower!
         """
         return {}
