@@ -3,26 +3,10 @@ from ._asset import Asset
 from datetime import datetime
 import pandas as pd
 import numpy as np
+from ._containers import PositionInfo
 
 
-class PositionInfo:
-    """
-    Container for position information
-    """
-    __slots__ = ['asset', 'qty']  # Decrease memory footprint
 
-    def __init__(self, asset, qty):
-        self.asset: Asset = asset
-        """Asset of the opened position"""
-
-        self.qty: float = qty
-        """Quantity of the opened position"""
-
-    def __str__(self):
-        return f"{self.asset} x {self.qty}"
-
-    def __repr__(self):
-        return self.__str__()
 
 
 class Account:

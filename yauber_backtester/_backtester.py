@@ -4,18 +4,7 @@ import numpy as np
 from ._asset import Asset
 from ._strategy import Strategy
 from ._account import Account
-import numba
-from math import nan
-
-
-@numba.jit(nopython=True)
-def _unstack(values, n_assets, n_fields):  # pragma: no cover
-    result = np.full((n_assets, n_fields), nan)
-
-    for i in range(n_assets):
-        for j in range(n_fields):
-            result[i, j] = values[i * n_fields + j]
-    return result
+from ._containers import MFrame
 
 
 class Backtester:
@@ -80,10 +69,16 @@ class Backtester:
 
         last_dt = None
 
-        n_assets = len(df_all_metrics.columns.levels[0])
-        n_cols = len(df_all_metrics.columns.levels[1])
+        # Setting vals / dt_idx in sake of performance
+        vals = df_all_metrics.values
+        dt_idx = df_all_metrics.index
+        mframe = MFrame(assets=df_all_metrics.columns.levels[0],
+                        columns=df_all_metrics.columns.levels[1])
 
-        for dt, row in df_all_metrics.iterrows():
+        for i in range(df_all_metrics.values.shape[0]):
+            row = vals[i]
+            dt = dt_idx[i]
+
             # Perform some sanity checks
             if last_dt is not None:
                 if dt <= last_dt:
@@ -91,20 +86,14 @@ class Backtester:
 
             # Get metrics for specific date and unstack them to the dataframe
             # Fast unstacking to dataframe of metrics
-            _metrics = pd.DataFrame(_unstack(row.values, n_assets, n_cols),
-                                    index=df_all_metrics.columns.levels[0],
-                                    columns=df_all_metrics.columns.levels[1])
+            mframe._fill(row)
 
             # Call strategy.compose_portfolio()
-            new_pos = self.strategy.compose_portfolio(dt, acc, _metrics)
+            new_pos = self.strategy.compose_portfolio(dt, acc, mframe)
 
             # Process new position
             acc._process_position(dt, new_pos)
 
             last_dt = dt
-
-        if len(df_all_metrics) > 0:
-            # Finally make sure that fast _unstack function values are exactly the same to pandas.unstack()
-            assert np.allclose(row.unstack().values, _metrics.values, equal_nan=True)
 
         return acc

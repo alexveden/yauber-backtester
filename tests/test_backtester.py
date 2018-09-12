@@ -1,6 +1,6 @@
 import unittest
 import unittest
-from yauber_backtester._backtester import _unstack, Backtester
+from yauber_backtester._backtester import Backtester
 
 from yauber_backtester import Asset, Strategy, Account
 from unittest import mock
@@ -91,21 +91,6 @@ class BacktesterTestCase(unittest.TestCase):
         bt = Backtester(self.asset_universe, smock)
         #  raise ValueError(f"{self.strategy}.calculate() must return the same metrics and in the same order for each asset")
         self.assertRaises(ValueError, bt._process_metrics)
-
-    def test__unstack(self):
-        bt = Backtester(self.asset_universe, self.strategy)
-        df_all_metrics = bt._process_metrics()
-
-        n_assets = len(df_all_metrics.columns.levels[0])
-        n_cols = len(df_all_metrics.columns.levels[1])
-        for dt, row in df_all_metrics.iterrows():
-            # Get metrics for specific date and unstack them to the dataframe
-            # Fast unstacking to dataframe of metrics
-            _metrics = pd.DataFrame(_unstack(row.values, n_assets, n_cols),
-                                    index=df_all_metrics.columns.levels[0],
-                                    columns=df_all_metrics.columns.levels[1])
-
-            assert np.allclose(row.unstack().values, _metrics.values, equal_nan=True)
 
     def test__run(self):
         def calc_side(asset):

@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from ._asset import Asset
 from ._account import Account
+from ._containers import MFrame
 from datetime import datetime
 
 
@@ -39,20 +40,25 @@ class Strategy:
         """
         return None
 
-    def compose_portfolio(self, date: datetime, account: Account, asset_metrics: pd.DataFrame) -> dict:
+    def compose_portfolio(self, date: datetime, account: Account, mf: MFrame) -> dict:
         """
         Returns a dictionary of portfolio composition at specific 'date'
         :param date: analysis date
         :param account: actual account at the previous date (see. Account class interface)
-        :param asset_metrics: composite pd.DataFrame returned by self.calculate() method at 'date', with index as asset, and columns as metrics names
+        :param mf: composite of metrics returned by self.calculate() method at 'date'
 
         :return: dictionary of  {asset_class_instance: float_opened_quantity, ... }
-        Notes:
-        This method is about managing portfolios, you can implement asset ranking based on asset_metrics, or Money Management strategy.
-        This method permits opening fractional position sizes, or opening positions with negative capital. You should explicitly manage
-        all possible issues with portfolio composition and perform all checks in this method.
 
-        You can use information returned by asset.info(date) to get all information about the asset. The backtester engine will use this
-        information to retrieve execution price and costs, as well.
+        -----------
+        mf - cheat sheet
+        -----------
+        mf.assets - list of all assets
+        mf.columns - list of all columns / metrics
+        mf['metric_name'] - get metric 'metric_name' numpy array across all assets
+        for asset, row in mf.items():  - iterate over all assets and rows, you can use row['metric_name'] too
+        mf.get_at('asset_ticker', 'metric_name') - get scalar value of 'metric_name' for asset 'asset_ticker'
+        mf.get_asset('asset_ticker') - get asset object by ticker name
+        mf.get_filtered((mf['some_metric'] > 0) & (mf['another_metric'] == 1), sort_by_col='another_metric'[or None]) - get filtered and sorted data
+        for (asset, m_data) in zip(*mf.get_filtered(_cond, sort_by_col='ma200')): - iterate over filtered and sorted results
         """
         return {}

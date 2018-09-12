@@ -249,8 +249,8 @@ class Asset:
                         raise KeyError(f'No margin found at {date}, margin range {self.margin.index[0]} - {self.margin.index[-1]}')
                     result = ser[-1]
 
-                #if result < 0:
-                #    raise ValueError(f'Margin requirements for the asset {self} is negative at {date} value: {result}')
+                if result < 0:
+                    raise ValueError(f'Margin requirements for the asset {self} is negative at {date} value: {result}')
                 return result * abs(qty)
             else:
                 if self.margin <= 1.0:

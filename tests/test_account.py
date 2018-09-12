@@ -644,7 +644,8 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(hash(acc), hash('test'))
         self.assertEqual(True, acc == acc2)
         self.assertEqual(True, acc != acc3)
-        self.assertEqual(True, acc != 'test')
+        self.assertEqual(True, acc == 'test')
+        self.assertEqual(False, acc == None)
 
     def test_as_transactions(self):
         acc = Account(buffer_len=6, name='test')
