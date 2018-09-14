@@ -4,4 +4,4 @@ export PYTHONPATH=$PYTHONPATH:$CURRENTDIR
 
 cd notebooks
 
-jupyter notebook
+jupyter lab
