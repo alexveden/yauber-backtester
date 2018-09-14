@@ -172,7 +172,7 @@ class Report:
         trade_tuples = [t.as_tuple() for t in closed_trades]
         return pd.DataFrame(trade_tuples, columns=TRADE_KEYS)
 
-    def _build(self, account) -> Tuple[dict, pd.DataFrame, pd.DataFrame]:
+    def _build(self, account) -> Tuple[pd.Series, pd.DataFrame, pd.DataFrame]:
         """
         Builds backtesting report statistics
         :return:
@@ -192,11 +192,13 @@ class Report:
         winrate = np.nan
         netprofit = np.nan
         netprofit_perc = np.nan
+        equity_last = np.nan
 
         if len(trade_pnl) > 0 and len(acc_df) > 0:
+            equity_last = equity[-1]
             winrate = len(trade_pnl[trade_pnl > 0]) / len(trade_pnl)
-            netprofit = equity[-1] - capital_avg
-            netprofit_perc = (equity[-1] / capital_avg - 1)
+            netprofit = equity_last - capital_avg
+            netprofit_perc = (equity_last / capital_avg - 1)
             mdd_arr = (equity - equity.expanding().max())
             mdd = mdd_arr.min()
             mdd_pct_arr = (equity / equity.expanding().max() - 1)
@@ -205,10 +207,9 @@ class Report:
             difference_in_years = (equity.index[-1] - equity.index[0]).days / 365.2425
             cagr = (netprofit_perc + 1) ** (1 / difference_in_years) - 1
 
-
-
+        # Return as pd.Series to maintain fields order
         stats = pd.Series(OrderedDict([
-            ('Equity', equity[-1]),
+            ('Equity', equity_last),
             ('CAGR %', cagr * 100),
             ('NetProfit $', netprofit),
             ('NetProfit %', netprofit_perc * 100),

@@ -340,6 +340,26 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(costs_potential_close_total, -2 * 0.5 * 3)
         self.assertEqual(costs_potential_exec_total, -3 * 0.5 * 3)
 
+    def test__calc_transations_change_existing_both_zeros(self):
+        new_pos = {self.asset1: (0, 2, 3)}
+        old_pos = {self.asset1: (0, 1, 1)}  # Old was opened at '2018-01-01'
+
+        (
+            transactions,
+            pnl_close_total, pnl_execution_total,
+            costs_close_total, costs_exec_total,
+            costs_potential_close_total, costs_potential_exec_total,
+        ) = Account._calc_transactions(pd.Timestamp('2018-01-02'), new_pos, old_pos)
+
+        self.assertEqual(0, len(transactions))
+
+        self.assertEqual(pnl_close_total, 0)
+        self.assertEqual(pnl_execution_total, 0)
+        self.assertEqual(costs_close_total, 0)
+        self.assertEqual(costs_exec_total, 0)
+        self.assertEqual(costs_potential_close_total, 0)
+        self.assertEqual(costs_potential_exec_total, 0)
+
     def test__calc_transations_change_existing_multiple(self):
         new_pos = {self.asset1: (3, 2, 3), self.asset2: (1, 2, 3)}
         old_pos = {self.asset1: (2, 1, 1)}  # Old was opened at '2018-01-01'

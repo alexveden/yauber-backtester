@@ -154,6 +154,9 @@ class Account:
         if name is None:
             name = self.name
 
+        # Replace negative equity margin by zeros
+        _margin = np.where(self._margin_array[:self._buf_cnt] < 0, 0, self._margin_array[:self._buf_cnt])
+
         synt_asset = {
             'ticker': name,
             'quotes': pd.DataFrame(
@@ -169,7 +172,7 @@ class Account:
             ),
             'is_synthetic': True,  # To forbid creating multiple asset derivatives from accounts
             'point_value': 1.0,    # Equity prices are in dollars, so point value should be always 1.0
-            'margin': pd.Series(self._margin_array[:self._buf_cnt], index=self._date_array[:self._buf_cnt]),
+            'margin': pd.Series(_margin, index=self._date_array[:self._buf_cnt]),
             'legs': {k.ticker: v[0] for k, v in self._position.items()},  # 'legs' must be a dictionary of {<ticker_string>: <qty_float>}
             'costs': {
                 'type': 'dynamic',

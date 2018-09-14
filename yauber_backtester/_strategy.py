@@ -13,11 +13,11 @@ class Strategy:
     """
     name = 'BaseStrategy'
 
-    def __init__(self, **strategy_context):
-        self.context = strategy_context
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
         """Strategy initial dictionary"""
 
-        self.params = self.context.get('params', {})
+        self.params = self.kwargs.get('params', {})
         """Strategy default params dict"""
 
     def __str__(self):
@@ -38,7 +38,7 @@ class Strategy:
         Calculates main logic of the strategy, this method must return pd.DataFrame or None (if asset is filtered at all)
         This information is used by portfolio composition stage
         """
-        return None
+        raise NotImplementedError('You should implement calculate() method for every strategy class')
 
     def compose_portfolio(self, date: datetime, account: Account, mf: MFrame) -> dict:
         """
@@ -63,4 +63,4 @@ class Strategy:
         filtered_assets, filtere_data  = mf.get_filtered(..some condition..) - get filtered asset list and metrics
         mf.as_dataframe() - converts MFrame to Pandas.DataFrame. Warning: calculations might become much slower!
         """
-        return {}
+        raise NotImplementedError('You should implement compose_portfolio() method for every strategy class')

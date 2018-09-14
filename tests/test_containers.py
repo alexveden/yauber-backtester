@@ -17,8 +17,7 @@ class ContainersTestCase(unittest.TestCase):
         cls.strategy = TestStrategy()
 
     def test__unstack(self):
-        bt = Backtester(self.asset_universe, self.strategy)
-        df_all_metrics = bt._process_metrics()
+        df_all_metrics = Backtester._process_metrics(self.strategy, self.asset_universe)
 
         n_assets = len(df_all_metrics.columns.levels[0])
         n_cols = len(df_all_metrics.columns.levels[1])

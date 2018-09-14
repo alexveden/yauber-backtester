@@ -46,8 +46,7 @@ class BacktesterTestCase(unittest.TestCase):
         cls.strategy = TestStrategy()
 
     def test__process_metrics(self):
-        bt = Backtester(self.asset_universe, self.strategy)
-        df_all_metrics = bt._process_metrics()
+        df_all_metrics = Backtester._process_metrics(self.strategy, self.asset_universe)
 
         self.assertEqual(True, isinstance(df_all_metrics, pd.DataFrame))
         assert all(df_all_metrics.columns.levels[0] == self.asset_universe)
@@ -60,9 +59,8 @@ class BacktesterTestCase(unittest.TestCase):
             return df
         smock = mock.MagicMock(self.strategy)
         smock.calculate.side_effect = calc_side
-        bt = Backtester(self.asset_universe, smock)
         # raise ValueError(f"Couldn't convert {self.strategy}.calculate({asset}) result to float dtype, "
-        self.assertRaises(ValueError, bt._process_metrics)
+        self.assertRaises(ValueError, Backtester._process_metrics, smock, self.asset_universe)
 
     def test__process_metrics_wrong_col_order(self):
         def calc_side(asset):
@@ -74,9 +72,9 @@ class BacktesterTestCase(unittest.TestCase):
             return df
         smock = mock.MagicMock(self.strategy)
         smock.calculate.side_effect = calc_side
-        bt = Backtester(self.asset_universe, smock)
+
         #  raise ValueError(f"{self.strategy}.calculate() must return the same metrics and in the same order for each asset")
-        self.assertRaises(ValueError, bt._process_metrics)
+        self.assertRaises(ValueError, Backtester._process_metrics, smock, self.asset_universe)
 
     def test__process_metrics_wrong_col_count(self):
         def calc_side(asset):
@@ -88,9 +86,9 @@ class BacktesterTestCase(unittest.TestCase):
             return df
         smock = mock.MagicMock(self.strategy)
         smock.calculate.side_effect = calc_side
-        bt = Backtester(self.asset_universe, smock)
+
         #  raise ValueError(f"{self.strategy}.calculate() must return the same metrics and in the same order for each asset")
-        self.assertRaises(ValueError, bt._process_metrics)
+        self.assertRaises(ValueError, Backtester._process_metrics, smock, self.asset_universe)
 
     def test__run(self):
         def calc_side(asset):
@@ -102,8 +100,7 @@ class BacktesterTestCase(unittest.TestCase):
         smock.compose_portfolio.return_value = {self.asset_universe[0]: 1}
 
         with mock.patch('yauber_backtester._account.Account._process_position') as mock_acc_process:
-            bt = Backtester(self.asset_universe, smock)
-            res = bt.run()
+            res = Backtester.run(smock, self.asset_universe)
 
             self.assertEqual(True, smock.initialize.called)
             self.assertEqual(True, smock.compose_portfolio.called)
@@ -119,13 +116,12 @@ class BacktesterTestCase(unittest.TestCase):
         smock.calculate.side_effect = calc_side
         smock.compose_portfolio.return_value = {self.asset_universe[0]: 1}
 
-        bt = Backtester(self.asset_universe, smock)
-        metrics_reversed = bt._process_metrics().sort_index(ascending=False)
+        metrics_reversed = Backtester._process_metrics(smock, self.asset_universe).sort_index(ascending=False)
         mock__process_metrics = mock.Mock()
         mock__process_metrics.return_value = metrics_reversed
-        bt._process_metrics = mock__process_metrics
+        Backtester._process_metrics = mock__process_metrics
         # ValueError: Inconsistent datetime index order, quotes must be sorted in ascending order
-        self.assertRaises(ValueError, bt.run)
+        self.assertRaises(ValueError, Backtester.run, smock, self.asset_universe)
 
 
 if __name__ == '__main__':
