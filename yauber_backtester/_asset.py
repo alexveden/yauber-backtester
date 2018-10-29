@@ -19,6 +19,12 @@ class Asset:
                 raise ValueError(f"Empty quotes series for {self}")
             if 'c' not in self._quotes or 'exec' not in self._quotes:
                 raise ValueError(f'Asset "{self}" quotes dataframe must contain at least "c" and "exec" columns and , got {self._quotes.columns}')
+        #
+        # Setting quotes cache for fast access
+        #
+        self._quotes_values = self._quotes.values
+        self._quotes_col_close = self._quotes.columns.get_loc('c')
+        self._quotes_col_exec = self._quotes.columns.get_loc('exec')
 
         self.kwargs = kwargs
 
@@ -152,7 +158,8 @@ class Asset:
             return self._cache_px_result
         try:
             # Try fast way
-            result = self._quotes.at[date, 'c'], self._quotes.at[date, 'exec']
+            idx = self._quotes.index.get_loc(date)
+            result = self._quotes_values[idx][self._quotes_col_close], self._quotes_values[idx][self._quotes_col_exec]
         except KeyError:
             ser = self._quotes.loc[:date]
             if len(ser) == 0:
