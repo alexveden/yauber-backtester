@@ -1,6 +1,7 @@
 from typing import Tuple, List, Dict
 import pandas as pd
 import numpy as np
+from math import isfinite
 
 
 class Asset:
@@ -277,7 +278,14 @@ class Asset:
         :return:
         """
         cpx, epx = self.get_prices(date)
-        return epx * self.get_point_value(date) * abs(qty)
+        if isfinite(epx):
+            _valid_price = epx
+        elif isfinite(cpx):
+            _valid_price = cpx
+        else:
+            raise ValueError(f"Invalid asset price for {self} at {date}")
+
+        return _valid_price * self.get_point_value(date) * abs(qty)
 
     def calc_dollar_pnl(self, date, prev_price, current_price, qty) -> float:
         """

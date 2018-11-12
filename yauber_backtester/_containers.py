@@ -23,17 +23,23 @@ class PositionInfo:
     """
     Container for position information
     """
-    __slots__ = ['asset', 'qty']  # Decrease memory footprint
+    __slots__ = ['asset', 'qty', 'ctx']  # Decrease memory footprint
 
-    def __init__(self, asset, qty):
+    def __init__(self, asset, qty, ctx):
         self.asset: Asset = asset
         """Asset of the opened position"""
 
         self.qty: float = qty
         """Quantity of the opened position"""
 
+        self.ctx = ctx
+        """Position custom context (tags, state, etc)"""
+
     def __str__(self):
-        return f"{self.asset} x {self.qty}"
+        if self.ctx is None:
+            return f"{self.asset} x {self.qty}"
+        else:
+            return f"{self.asset} x {self.qty} ({self.ctx})"
 
     def __repr__(self):
         return self.__str__()

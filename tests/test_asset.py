@@ -388,6 +388,28 @@ class AssetTestCase(unittest.TestCase):
         self.assertEqual(2 * 100 * 100, a.calc_position_value(pd.Timestamp('2018-01-01'), 100))
         self.assertEqual(2 * 100 * 100, a.calc_position_value(pd.Timestamp('2018-01-01'), -100))
 
+    def test_calc_position_value_nan_exec(self):
+        quotes = pd.DataFrame(
+            {
+                'c': [np.nan, 2, 3, 4, 5, 6],
+                'exec': [np.nan, 3, 4, 5, 6, np.nan],
+            },
+            index=[pd.Timestamp(d) for d in ['2018-01-01', '2018-01-02', '2018-01-03',
+                                             '2018-01-07', '2018-01-08', '2018-01-09']]
+        )
+        _asset_dict = {
+            'ticker': 'test_ticker',
+            'quotes': quotes,
+            'point_value': 100
+        }
+        a = Asset(**_asset_dict)
+
+        # Valid case
+        self.assertEqual(6 * 100 * 100, a.calc_position_value(pd.Timestamp('2018-01-09'), 100))
+        self.assertEqual(6 * 100 * 100, a.calc_position_value(pd.Timestamp('2018-01-09'), -100))
+        # Both are nan raise
+        self.assertRaises(ValueError, a.calc_position_value, pd.Timestamp('2018-01-01'), 100)
+
     def test_get_margin_requirements(self):
 
         _asset_dict = {
@@ -672,6 +694,7 @@ class AssetTestCase(unittest.TestCase):
             'quotes': self.quotes,
         }
         a = Asset(**_asset_dict)
+        _a = Asset(**_asset_dict)
 
         _asset_dict = {
             'ticker': 'test_ticker',
@@ -689,6 +712,7 @@ class AssetTestCase(unittest.TestCase):
         self.assertEqual(False, a == 'test')
         self.assertEqual(True, a == a2)
         self.assertEqual(False, a == a3)
+        self.assertEqual(True, a == _a)
 
 if __name__ == '__main__':
     unittest.main()

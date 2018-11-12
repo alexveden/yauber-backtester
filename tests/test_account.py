@@ -1,6 +1,7 @@
 import unittest
 from yauber_backtester._account import Account
 from yauber_backtester._asset import Asset
+from yauber_backtester._containers import PositionInfo
 from unittest import mock
 import pandas as pd
 import numpy as np
@@ -42,7 +43,7 @@ class AccountTestCase(unittest.TestCase):
 
 
     def test__calc_transations_new(self):
-        new_pos = {self.asset1: (2, 2, 3)}
+        new_pos = {self.asset1: (2, 2, 3, None)}
         old_pos = None
 
         (
@@ -65,6 +66,7 @@ class AccountTestCase(unittest.TestCase):
             t_costs_exec,
             t_pnl_close,
             t_pnl_exec,
+            t_ctx,
         ) = transactions[0]
         self.assertEqual(pd.Timestamp('2018-01-02'), t_dt)
         self.assertEqual(self.asset1, t_asset)
@@ -84,7 +86,7 @@ class AccountTestCase(unittest.TestCase):
 
     def test__calc_transations_close_old(self):
         new_pos = {}
-        old_pos = {self.asset1: (2, 1, 1)}  # Old was opened at '2018-01-01'
+        old_pos = {self.asset1: (2, 1, 1, None)}  # Old was opened at '2018-01-01'
 
         (
             transactions,
@@ -106,6 +108,7 @@ class AccountTestCase(unittest.TestCase):
             t_costs_exec,
             t_pnl_close,
             t_pnl_exec,
+            t_ctx,
         ) = transactions[0]
 
         self.assertEqual(pd.Timestamp('2018-01-02'), t_dt)
@@ -125,8 +128,8 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(costs_potential_exec_total, 0.0)
 
     def test__calc_transations_change_existing_decrease(self):
-        new_pos = {self.asset1: (1, 2, 3)}
-        old_pos = {self.asset1: (2, 1, 1)}  # Old was opened at '2018-01-01'
+        new_pos = {self.asset1: (1, 2, 3, None)}
+        old_pos = {self.asset1: (2, 1, 1, None)}  # Old was opened at '2018-01-01'
 
         (
             transactions,
@@ -148,6 +151,7 @@ class AccountTestCase(unittest.TestCase):
             t_costs_exec,
             t_pnl_close,
             t_pnl_exec,
+            t_ctx,
         ) = transactions[0]
 
         self.assertEqual(pd.Timestamp('2018-01-02'), t_dt)
@@ -158,6 +162,7 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(3, t_exec_price)
         self.assertEqual(-2 * 0.5 * 1, t_costs_close)
         self.assertEqual(-3 * 0.5 * 1, t_costs_exec)
+        self.assertEqual(None, t_ctx)
 
         self.assertEqual(pnl_close_total, 2 + t_costs_close)
         self.assertEqual(pnl_execution_total, 4 + t_costs_exec)
@@ -167,8 +172,8 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(costs_potential_exec_total, -3 * 0.5 * 1)
 
     def test__calc_transations_change_existing_reversal_long(self):
-        new_pos = {self.asset1: (1, 2, 3)}
-        old_pos = {self.asset1: (-2, 1, 1)}  # Old was opened at '2018-01-01'
+        new_pos = {self.asset1: (1, 2, 3, None)}
+        old_pos = {self.asset1: (-2, 1, 1, None)}  # Old was opened at '2018-01-01'
 
         (
             transactions,
@@ -190,6 +195,7 @@ class AccountTestCase(unittest.TestCase):
             t_costs_exec,
             t_pnl_close,
             t_pnl_exec,
+            t_ctx,
         ) = transactions[0]
 
         self.assertEqual(pd.Timestamp('2018-01-02'), t_dt)
@@ -214,6 +220,7 @@ class AccountTestCase(unittest.TestCase):
             t_costs_exec,
             t_pnl_close,
             t_pnl_exec,
+            t_ctx,
         ) = transactions[1]
 
         self.assertEqual(pd.Timestamp('2018-01-02'), t_dt)
@@ -235,8 +242,8 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(costs_potential_exec_total, -3 * 0.5 * 1)
 
     def test__calc_transations_change_existing_reversal_short(self):
-        new_pos = {self.asset1: (-1, 2, 3)}
-        old_pos = {self.asset1: (2, 1, 1)}  # Old was opened at '2018-01-01'
+        new_pos = {self.asset1: (-1, 2, 3, None)}
+        old_pos = {self.asset1: (2, 1, 1, None)}  # Old was opened at '2018-01-01'
 
         (
             transactions,
@@ -258,6 +265,7 @@ class AccountTestCase(unittest.TestCase):
             t_costs_exec,
             t_pnl_close,
             t_pnl_exec,
+            t_ctx,
         ) = transactions[0]
 
         self.assertEqual(pd.Timestamp('2018-01-02'), t_dt)
@@ -280,6 +288,7 @@ class AccountTestCase(unittest.TestCase):
             t_costs_exec,
             t_pnl_close,
             t_pnl_exec,
+            t_ctx,
         ) = transactions[1]
 
         self.assertEqual(pd.Timestamp('2018-01-02'), t_dt)
@@ -299,8 +308,8 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(costs_potential_exec_total, -3 * 0.5 * 1)
 
     def test__calc_transations_change_existing_increase(self):
-        new_pos = {self.asset1: (3, 2, 3)}
-        old_pos = {self.asset1: (2, 1, 1)}  # Old was opened at '2018-01-01'
+        new_pos = {self.asset1: (3, 2, 3, None)}
+        old_pos = {self.asset1: (2, 1, 1, None)}  # Old was opened at '2018-01-01'
 
         (
             transactions,
@@ -322,6 +331,7 @@ class AccountTestCase(unittest.TestCase):
             t_costs_exec,
             t_pnl_close,
             t_pnl_exec,
+            t_ctx,
         ) = transactions[0]
 
         self.assertEqual(pd.Timestamp('2018-01-02'), t_dt)
@@ -341,8 +351,8 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(costs_potential_exec_total, -3 * 0.5 * 3)
 
     def test__calc_transations_change_existing_both_zeros(self):
-        new_pos = {self.asset1: (0, 2, 3)}
-        old_pos = {self.asset1: (0, 1, 1)}  # Old was opened at '2018-01-01'
+        new_pos = {self.asset1: (0, 2, 3, None)}
+        old_pos = {self.asset1: (0, 1, 1, None)}  # Old was opened at '2018-01-01'
 
         (
             transactions,
@@ -361,8 +371,8 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(costs_potential_exec_total, 0)
 
     def test__calc_transations_change_existing_multiple(self):
-        new_pos = {self.asset1: (3, 2, 3), self.asset2: (1, 2, 3)}
-        old_pos = {self.asset1: (2, 1, 1)}  # Old was opened at '2018-01-01'
+        new_pos = {self.asset1: (3, 2, 3, None), self.asset2: (1, 2, 3, None)}
+        old_pos = {self.asset1: (2, 1, 1, None)}  # Old was opened at '2018-01-01'
 
         (
             transactions,
@@ -385,6 +395,7 @@ class AccountTestCase(unittest.TestCase):
                 t_costs_exec,
                 t_pnl_close,
                 t_pnl_exec,
+                t_ctx,
             ) = t
             if t_asset == self.asset1:
                 self.assertEqual(pd.Timestamp('2018-01-02'), t_dt)
@@ -493,9 +504,9 @@ class AccountTestCase(unittest.TestCase):
                 acc._process_position(pd.Timestamp('2018-01-02'), pos1)
 
                 self.assertEqual(False, acc._has_synthetic_assets)
-                self.assertEqual(acc._position, {self.asset1: (1, 2, 3)})
+                self.assertEqual(acc._position, {self.asset1: (1, 2, 3, None)})
                 self.assertEqual(True, mock_calc_trans.called)
-                self.assertEqual((pd.Timestamp('2018-01-02'), {self.asset1: (1, 2, 3)}, {}), mock_calc_trans.call_args[0])
+                self.assertEqual((pd.Timestamp('2018-01-02'), {self.asset1: (1, 2, 3, None)}, {}), mock_calc_trans.call_args[0])
 
                 self.assertEqual(['trans1', 'trans2'], acc._transactions)
                 self.assertEqual(1100, acc._equity_close)
@@ -528,6 +539,26 @@ class AccountTestCase(unittest.TestCase):
                 # ValueError: Incorrectly initialized account values buffer length or _process_position() called more times than expected
                 self.assertRaises(ValueError, acc._process_position, pd.Timestamp('2018-01-02'), pos1)
 
+    def test_process_position_with_context(self):
+        with mock.patch('yauber_backtester._account.Account._calc_transactions') as mock_calc_trans:
+            with mock.patch('yauber_backtester._account.Account._calc_account_margin') as mock_acc_margin:
+                mock_calc_trans.return_value = (
+                    ['trans1', 'trans2'],
+                    100, 200,
+                    -0.5, -1.0,
+                    -3, -4,
+                )
+                mock_acc_margin.return_value = 999
+
+                acc = Account(buffer_len=6, kw=True)
+                acc.capital_transaction(pd.Timestamp('2018-01-02'), 1000)
+
+                pos1 = {self.asset1: (1, ('ctx',))}
+                acc._process_position(pd.Timestamp('2018-01-02'), pos1)
+
+                self.assertEqual(False, acc._has_synthetic_assets)
+                self.assertEqual(acc._position, {self.asset1: (1, 2, 3, ('ctx',))})
+
     def test_process_position_errors_checks(self):
         with mock.patch('yauber_backtester._account.Account._calc_transactions') as mock_calc_trans:
             with mock.patch('yauber_backtester._account.Account._calc_account_margin') as mock_acc_margin:
@@ -555,14 +586,29 @@ class AccountTestCase(unittest.TestCase):
         asset2.get_margin_requirements.return_value = 200
 
         acc._position = {
-            asset1: (1, 2, 3),
-            asset2: (2, 2, 3)
+            asset1: (1, 2, 3, None),
+            asset2: (2, 2, 3, None)
         }
 
         margin = acc._calc_account_margin(pd.Timestamp('2018-01-02'))
         self.assertEqual(margin, 300)
         self.assertEqual((pd.Timestamp('2018-01-02'), 1), asset1.get_margin_requirements.call_args[0])
         self.assertEqual((pd.Timestamp('2018-01-02'), 2), asset2.get_margin_requirements.call_args[0])
+
+    def test_calc_account_nan_case(self):
+        acc = Account(buffer_len=6, kw=True)
+        asset1 = mock.MagicMock(Asset)
+        asset2 = mock.MagicMock(Asset)
+
+        asset1.get_margin_requirements.return_value = np.nan
+        asset2.get_margin_requirements.return_value = 200
+
+        acc._position = {
+            asset1: (1, 2, 3, None),
+            asset2: (2, 2, 3, None)
+        }
+
+        self.assertRaises(ValueError, acc._calc_account_margin, pd.Timestamp('2018-01-02'))
 
     def test_as_asset(self):
         with mock.patch('yauber_backtester._account.Account._calc_transactions') as mock_calc_trans:
@@ -628,8 +674,8 @@ class AccountTestCase(unittest.TestCase):
 
 
         acc._position = {
-            asset1: (1, 2, 3),
-            asset2: (2, 2, 3)
+            asset1: (1, 2, 3, None),
+            asset2: (2, 2, 3, None)
         }
 
         p = acc.position()
@@ -639,6 +685,8 @@ class AccountTestCase(unittest.TestCase):
         self.assertEqual(True, asset1 in p)
         self.assertEqual(True, asset2 in p)
 
+        self.assertTrue(isinstance(p[asset1], PositionInfo))
+        self.assertTrue(isinstance(p[asset2], PositionInfo))
         self.assertEqual(asset1, p[asset1].asset)
         self.assertEqual(asset2, p[asset2].asset)
         self.assertEqual(1, p[asset1].qty)

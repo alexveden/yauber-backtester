@@ -14,7 +14,8 @@ class TradeTestCase(unittest.TestCase):
             'costs_close': -0.5,
             'costs_exec': -0.2,
             'pnl_close': 2.4,
-            'pnl_execution': 3.5
+            'pnl_execution': 3.5,
+            'context': ('context',)
         }
         dt = pd.Timestamp('2017-01-01')
         t = Trade(dt, trans)
@@ -30,6 +31,36 @@ class TradeTestCase(unittest.TestCase):
         self.assertEqual(t._n_transations, 1)
         self.assertEqual(t._pnl, 3.5)
         self.assertEqual(t._qty, 1)
+        self.assertEqual(t._context, ('context',))
+
+    def test_init_no_context(self):
+        trans = {
+            'asset': 'test',
+            'position_action': 1,
+            'qty': 1,
+            'price_close': 1,
+            'price_exec': 2,
+            'costs_close': -0.5,
+            'costs_exec': -0.2,
+            'pnl_close': 2.4,
+            'pnl_execution': 3.5,
+            'context': None,
+        }
+        dt = pd.Timestamp('2017-01-01')
+        t = Trade(dt, trans)
+
+        self.assertEqual(t._is_closed, False)
+        self.assertEqual(t._entry_date, dt)
+        self.assertEqual(t._side, 1)
+        self.assertEqual(t._entry_qty, 1)
+        self.assertEqual(t._entry_value, 1 * 2)
+        self.assertEqual(t._exit_qty, 0)
+        self.assertEqual(t._exit_value, 0)
+        self.assertEqual(t._costs, -0.2)
+        self.assertEqual(t._n_transations, 1)
+        self.assertEqual(t._pnl, 3.5)
+        self.assertEqual(t._qty, 1)
+        self.assertEqual(np.isnan(t._context), True)
 
     def test_close(self):
         trans = {
@@ -167,7 +198,9 @@ class TradeTestCase(unittest.TestCase):
             _entry_qty,
             _exit_qty,
             _pnl,
-            _costs
+            _pnl_perc,
+            _costs,
+            _ctx
         ) = t.as_tuple()
 
         self.assertEqual(_asset, 'test')
@@ -180,12 +213,14 @@ class TradeTestCase(unittest.TestCase):
         self.assertEqual(_entry_qty, 1)
         self.assertEqual(_exit_qty, 0)
         self.assertEqual(_pnl, 3.5)
+        #self.assertEqual(_pnl_perc, (exit_avg_px / entry_avg_px - 1) * 1)
         self.assertEqual(_costs, -0.2)
+        self.assertEqual(True, np.isnan(_ctx))
 
         # Trade keys
         keys = (
         'asset', 'date_entry', 'date_exit', 'side', 'n_transactions', 'wavg_price_entered', 'wavg_price_exited',
-        'qty_entered', 'qty_exited', 'pnl', 'costs')
+        'qty_entered', 'qty_exited', 'pnl', 'pnl_perc', 'costs', 'context')
         self.assertEqual(TRADE_KEYS, keys)
 
 if __name__ == '__main__':

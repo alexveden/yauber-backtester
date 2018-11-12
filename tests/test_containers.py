@@ -84,12 +84,19 @@ class ContainersTestCase(unittest.TestCase):
             self.assertEqual(r['d'], mf.get_at(a, 'd'))
 
     def test_position_info(self):
-        p = PositionInfo(self.asset_universe[0], -1)
+        p = PositionInfo(self.asset_universe[0], -1, ('ctx',))
         self.assertEqual(p.asset, self.asset_universe[0])
         self.assertEqual(p.qty, -1)
+        self.assertEqual(p.ctx, ('ctx',))
 
-        self.assertEqual(str(p), f"{self.asset_universe[0]} x {-1}")
+        self.assertEqual(str(p), f"{self.asset_universe[0]} x {-1} (('ctx',))")
         self.assertEqual(str(p), repr(p))
+
+        p = PositionInfo(self.asset_universe[0], -1, None)
+        self.assertEqual(p.asset, self.asset_universe[0])
+        self.assertEqual(p.qty, -1)
+        self.assertEqual(p.ctx, None)
+        self.assertEqual(str(p), f"{self.asset_universe[0]} x {-1}")
 
 if __name__ == '__main__':
     unittest.main()

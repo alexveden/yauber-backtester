@@ -4,7 +4,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 from ._containers import PositionInfo
-
+from math import isfinite
 
 
 
@@ -90,7 +90,7 @@ class Account:
         result = {}
 
         for asset, v in self._position.items():
-            result[asset] = PositionInfo(asset, v[0])
+            result[asset] = PositionInfo(asset, v[0], v[3])
 
         return result
 
@@ -204,13 +204,18 @@ class Account:
 
         new_pos_dict = {}
         for asset, qty in new_pos.items():
-            if not isinstance(asset, Asset) or not isinstance(qty, (float, np.float, int, np.int32, np.int64)):
-                raise ValueError(f'strategy.compose_portfolio() must return dict of <asset_AssetClassInstance: qty_FloatNumber>,'
+            if not isinstance(asset, Asset) or not isinstance(qty, (float, np.float, int, np.int32, np.int64, tuple)):
+                raise ValueError(f'strategy.compose_portfolio() must return dict of <asset_AssetClassInstance: qty_FloatNumber or tuple(qty, contxt)>,'
                                  f' got <{type(asset)}: {type(qty)}>')
 
             self._has_synthetic_assets = self._has_synthetic_assets or asset.is_synthetic
             close_price, exec_price = asset.get_prices(dt)
-            new_pos_dict[asset] = (qty, close_price, exec_price)
+            if isinstance(qty, (float, np.float, int, np.int32, np.int64)):
+                new_pos_dict[asset] = (qty, close_price, exec_price, None)
+            elif isinstance(qty, tuple):
+                assert len(qty) == 2
+                # Apply additional context to the position record
+                new_pos_dict[asset] = (qty[0], close_price, exec_price, qty[1])
 
         # Calculate transactions logic for positions
         (
@@ -253,8 +258,16 @@ class Account:
         """
         margin = 0.0
 
-        for asset, (qty, cpx, epx) in self._position.items():
+        for asset, (qty, cpx, epx, _) in self._position.items():
             margin += asset.get_margin_requirements(dt, qty)
+
+        if not isfinite(margin):
+            # Some asset returns invalid margin, find out which one!
+            for asset, (qty, cpx, epx, _) in self._position.items():
+                margin = asset.get_margin_requirements(dt, qty)
+                if not isfinite(margin):
+                    break
+            raise ValueError(f'Invalid margin requirements returned by {asset} at {dt} for qty: {qty}')
 
         return margin
 
@@ -293,7 +306,7 @@ class Account:
             curr_pos = current_position_dict.get(asset, None)
 
             if curr_pos is not None:
-                curr_qty, close_price, exec_price = curr_pos
+                curr_qty, close_price, exec_price, _ctx = curr_pos
                 costs_close, costs_exec = asset.get_costs(dt, curr_qty)
                 costs_potential_close_total += costs_close
                 costs_potential_exec_total += costs_exec
@@ -318,7 +331,8 @@ class Account:
                         costs_close,
                         costs_exec,
                         pnl_close,
-                        pnl_execution
+                        pnl_execution,
+                        _ctx
                     ))
                     pnl_close_total += pnl_close
                     pnl_execution_total += pnl_execution
@@ -330,7 +344,7 @@ class Account:
                     #
                     # Close old position or skip old closed positions
                     #
-                    prev_qty, prev_cpx, prev_epx = prev_pos
+                    prev_qty, prev_cpx, prev_epx, _ctx = prev_pos
 
                     # Costs and prices
                     costs_close, costs_exec = asset.get_costs(dt, -prev_qty)
@@ -351,7 +365,8 @@ class Account:
                         costs_close,
                         costs_exec,
                         pnl_close,
-                        pnl_execution
+                        pnl_execution,
+                        _ctx
                     ))
 
                     pnl_close_total += pnl_close
@@ -360,8 +375,8 @@ class Account:
                     costs_exec_total += costs_exec
             else:
                 # Calculating transactions for existing position
-                prev_qty, prev_cpx, prev_epx = prev_pos
-                curr_qty, curr_cpx, curr_epx = curr_pos
+                prev_qty, prev_cpx, prev_epx, _ = prev_pos
+                curr_qty, curr_cpx, curr_epx, _ctx = curr_pos
                 trans_qty = curr_qty - prev_qty
                 new_trans_qty = 0
                 if trans_qty != 0:
@@ -394,7 +409,8 @@ class Account:
                     costs_close,
                     costs_exec,
                     pnl_close,
-                    pnl_execution
+                    pnl_execution,
+                    _ctx
                 ))
 
                 # Update total stats
@@ -423,7 +439,8 @@ class Account:
                         costs_close,
                         costs_exec,
                         pnl_close,
-                        pnl_execution
+                        pnl_execution,
+                        _ctx
                     ))
                     # Update total stats
                     pnl_close_total += pnl_close
@@ -431,13 +448,12 @@ class Account:
                     costs_close_total += costs_close
                     costs_exec_total += costs_exec
 
-
         # Return results as tuple because it's faster than dict or Pandas objects
         return (
-                    transactions,
-                    pnl_close_total, pnl_execution_total,
-                    costs_close_total, costs_exec_total,
-                    costs_potential_close_total, costs_potential_exec_total,
+            transactions,
+            pnl_close_total, pnl_execution_total,
+            costs_close_total, costs_exec_total,
+            costs_potential_close_total, costs_potential_exec_total,
         )
 
     def __str__(self):
